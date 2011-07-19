@@ -107,6 +107,11 @@ class tinymce_texteditor extends texteditor {
         } else {
             $xemoticon = '';
         }
+        if (array_key_exists('filter/multilang', $filters)) {
+            $xmultilang = 'moodlelang,';
+        } else {
+            $xmultilang = '';
+        }
 
         $params = array(
                     'mode' => "exact",
@@ -124,11 +129,11 @@ class tinymce_texteditor extends texteditor {
                     'apply_source_formatting' => true,
                     'remove_script_host' => false,
                     'entity_encoding' => "raw",
-                    'plugins' => "{$xmedia}advimage,safari,table,style,layer,advhr,advlink,emotions,inlinepopups,searchreplace,paste,directionality,fullscreen,moodlenolink,{$xemoticon}{$xdragmath}nonbreaking,contextmenu,insertdatetime,save,iespell,preview,print,noneditable,visualchars,xhtmlxtras,template,pagebreak,spellchecker",
+                    'plugins' => "{$xmedia}advimage,safari,table,style,layer,advhr,advlink,emotions,inlinepopups,searchreplace,paste,directionality,fullscreen,moodlenolink,{$xmultilang}{$xemoticon}{$xdragmath}nonbreaking,contextmenu,insertdatetime,save,iespell,preview,print,noneditable,visualchars,xhtmlxtras,template,pagebreak,spellchecker",
                     'theme_advanced_font_sizes' => "1,2,3,4,5,6,7",
                     'theme_advanced_layout_manager' => "SimpleLayout",
                     'theme_advanced_toolbar_align' => "left",
-                    'theme_advanced_buttons1' => "fontselect,fontsizeselect,formatselect",
+                    'theme_advanced_buttons1' => "fontselect,fontsizeselect,formatselect,{$xmultilang}",
                     'theme_advanced_buttons1_add' => "|,undo,redo,|,search,replace,|,fullscreen",
                     'theme_advanced_buttons2' => "bold,italic,underline,strikethrough,sub,sup,|,justifyleft,justifycenter,justifyright",
                     'theme_advanced_buttons2_add' => "|,cleanup,removeformat,pastetext,pasteword,|,forecolor,backcolor,|,ltr,rtl",
@@ -153,6 +158,16 @@ class tinymce_texteditor extends texteditor {
                     $manager->prepare_renderable_emoticon($emoticon, array('class' => 'emoticon emoticon-index-'.$index++)));
             }
             $params['moodleemoticon_emoticons'] = json_encode($imgs);
+        }
+
+        if ($xmultilang) {
+            $langs = get_string_manager()->get_list_of_languages();
+            $multilangs = array();
+            foreach (array_keys($langs) as $langcode) {
+	        $langcode = str_replace('_', '-', $langcode);
+                $multilangs[$langcode] = $langcode;
+            }
+            $params['moodlelang_langs'] = json_encode($multilangs);
         }
 
         if (empty($CFG->xmlstrictheaders) and (!empty($options['legacy']) or !empty($options['noclean']) or !empty($options['trusted']))) {
