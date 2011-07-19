@@ -33,6 +33,7 @@ $string['dragmath:dragmath_javaneeded'] = 'To use this page you need a Java-enab
 $string['dragmath:dragmath_title'] = 'DragMath Equation Editor';
 $string['media_dlg:filename'] = 'Filename';
 $string['moodleemoticon:desc'] = 'Insert emoticon';
+$string['moodlelang:language'] = 'Language';
 $string['moodlenolink:desc'] = 'Prevent automatic linking';
 $string['pluginname'] = 'TinyMCE HTML editor';
 
