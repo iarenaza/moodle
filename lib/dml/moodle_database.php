@@ -727,6 +727,11 @@ abstract class moodle_database {
                 if (!array_key_exists($key, $params)) {
                     throw new dml_exception('missingkeyinsql', $key, '');
                 }
+                if (strlen($key) > 30) {
+                    throw new coding_exception(
+                            "Placeholder names must be 30 characters or shorter. '" .
+                            $key . "' is too long.", $sql);
+                }
                 $finalparams[$key] = $params[$key];
             }
             if ($count != count($finalparams)) {
@@ -1575,7 +1580,9 @@ abstract class moodle_database {
      * @throws dml_exception if error
      */
     public function delete_records($table, array $conditions=null) {
-        if (is_null($conditions)) {
+        // truncate is drop/create (DDL), not transactional safe,
+        // so we don't use the shortcut within them. MDL-29198
+        if (is_null($conditions) && empty($this->transactions)) {
             return $this->execute("TRUNCATE TABLE {".$table."}");
         }
         list($select, $params) = $this->where_clause($table, $conditions);
