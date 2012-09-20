@@ -212,16 +212,16 @@ function ldap_connect_moodle($host_url, $ldap_version, $user_type, $bind_dn, $bi
  * cn=username,ou=suborg,o=org
  *
  * @param mixed $ldapconnection a valid LDAP connection.
- * @param mixed $username username (external LDAP encoding, no db slashes).
+ * @param string $username username (external LDAP encoding, no db slashes).
  * @param array $contexts contexts to look for the user.
- * @param string $objectclass objectlass of the user (in LDAP filter syntax).
- * @param string $search_attrib the attribute use to look for the user.
+ * @param string $objectclass objectClass of the user (in LDAP filter syntax).
+ * @param string $search_attrib the attribute used to look for the user.
  * @param boolean $search_sub whether to search subcontexts or not.
  * @return mixed the user dn (external LDAP encoding, no db slashes) or false
  *
  */
 function ldap_find_userdn($ldapconnection, $username, $contexts, $objectclass, $search_attrib, $search_sub) {
-    if (empty($ldapconnection) || empty($username) || empty($contexts) || empty($objectclass) || empty($search_attrib)) {
+    if (empty($ldapconnection) || !isset($username) || trim($username) === '' || empty($contexts) || empty($objectclass) || empty($search_attrib)) {
         return false;
     }
 
