@@ -249,7 +249,7 @@ class auth_plugin_ldap extends auth_plugin_base {
                 } else {
                     $newval = $textlib->convert($entry[$value], $this->config->ldapencoding, 'utf-8');
                 }
-                if (!empty($newval)) { // favour ldap entries that are set
+                if (isset($newval) && trim($newval) !== '') { // favour ldap entries that are set
                     $ldapval = $newval;
                 }
             }
