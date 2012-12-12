@@ -327,7 +327,8 @@ class auth_plugin_base {
      * return number of days to user password expires
      *
      * If userpassword does not expire it should return 0. If password is already expired
-     * it should return negative value.
+     * it should return negative value and if {@link $CFG}->forcechangeexpiredpassword
+     * is true it should set the auth_forcepasswordchange preference for the user.
      *
      * @param mixed $username username (with system magic quotes)
      * @return integer

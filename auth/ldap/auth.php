@@ -575,12 +575,15 @@ class auth_plugin_ldap extends auth_plugin_base {
      * Return number of days to user password expires
      *
      * If userpassword does not expire it should return 0. If password is already expired
-     * it should return negative value.
+     * it should return negative value and if {@link $CFG}->forcechangeexpiredpassword
+     * is true it should set the auth_forcepasswordchange preference for the user.
      *
      * @param mixed $username username
      * @return integer
      */
     function password_expire($username) {
+        global $CFG, $DB;
+
         $result = 0;
 
         $extusername = textlib::convert($username, 'utf-8', $this->config->ldapencoding);
@@ -598,9 +601,15 @@ class auth_plugin_ldap extends auth_plugin_base {
                     if ($expiretime != 0) {
                         $now = time();
                         if ($expiretime > $now) {
+                            // Not expired yet.
                             $result = ceil(($expiretime - $now) / DAYSECS);
                         } else {
+                            // Already expired.
                             $result = floor(($expiretime - $now) / DAYSECS);
+                            if (!empty($CFG->forcechangeexpiredpassword)) {
+                                $user = $DB->get_record('user', array('username' => $username, 'mnethostid' => $CFG->mnet_localhost_id));
+                                set_user_preference('auth_forcepasswordchange', 1, $user->id);
+                            }
                         }
                     }
                 }
@@ -1989,7 +1998,7 @@ class auth_plugin_ldap extends auth_plugin_base {
         // If the low order 32 bits are 0, then passwords do not expire in
         // the domain. Just do '$maxpwdage mod 2^32' and check the result
         // (2^32 = 4294967296)
-        if (bcmod ($maxpwdage, 4294967296) === '0') {
+        if (bcmod ($maxpwdage, '4294967296') === '0') {
             return 0;
         }
 

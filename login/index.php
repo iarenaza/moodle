@@ -236,7 +236,12 @@ if ($frm and isset($frm->username)) {                             // Login WITH 
                 exit;
             } elseif (intval($days2expire) < 0 ) {
                 echo $OUTPUT->header();
-                echo $OUTPUT->confirm(get_string('auth_passwordisexpired', 'auth'), $passwordchangeurl, $urltogo);
+                if (empty($CFG->forcechangeexpiredpassword)) {
+                    echo $OUTPUT->confirm(get_string('auth_passwordisexpired', 'auth'), $passwordchangeurl, $urltogo);
+                } else {
+                    echo $OUTPUT->notification(get_string('forcepasswordchangenotice'));
+                    echo $OUTPUT->continue_button($passwordchangeurl);
+                }
                 echo $OUTPUT->footer();
                 exit;
             }

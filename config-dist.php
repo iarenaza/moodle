@@ -470,6 +470,12 @@ $CFG->admin = 'admin';
 // To ensure they are never used even when available:
 //      $CFG->svgicons = false;
 //
+// If this setting is set to true, then Moodle will *force* the user to change her
+// password if it has expired (as opposed to merely offering her the possibility to
+// change it).
+// 
+//      $CFG->forcechangeexpiredpassword = true;
+//
 //=========================================================================
 // 8. SETTINGS FOR DEVELOPMENT SERVERS - not intended for production use!!!
 //=========================================================================
