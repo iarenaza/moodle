@@ -770,6 +770,7 @@ class auth_plugin_ldap extends auth_plugin_base {
                         $updateuser = new stdClass();
                         $updateuser->id = $user->id;
                         $updateuser->auth = 'nologin';
+                        $updateuser->suspended = 1;
                         $DB->update_record('user', $updateuser);
                         echo "\t"; print_string('auth_dbsuspenduser', 'auth_db', array('name'=>$user->username, 'id'=>$user->id)); echo "\n";
                         $euser = $DB->get_record('user', array('id' => $user->id));
@@ -797,6 +798,7 @@ class auth_plugin_ldap extends auth_plugin_base {
                     $updateuser = new stdClass();
                     $updateuser->id = $user->id;
                     $updateuser->auth = $this->authtype;
+                    $updateuser->suspended = 0;
                     $DB->update_record('user', $updateuser);
                     echo "\t"; print_string('auth_dbreviveduser', 'auth_db', array('name'=>$user->username, 'id'=>$user->id)); echo "\n";
                     $euser = $DB->get_record('user', array('id' => $user->id));
