@@ -25,6 +25,8 @@
 
 defined('MOODLE_INTERNAL') || die();
 
+$authtype = 'ldap';
+
 $plugin->version   = 2013052100;        // The current plugin version (Date: YYYYMMDDXX)
 $plugin->requires  = 2013050100;        // Requires this Moodle version
-$plugin->component = 'auth_ldap';       // Full name of the plugin (used for diagnostics)
+$plugin->component = 'auth_'.$authtype; // Full name of the plugin (used for diagnostics)
