@@ -2,23 +2,25 @@
 
 require_once(dirname(dirname(dirname(__FILE__))).'/config.php');
 
+$authtype = 'ldap';
+
 //HTTPS is required in this page when $CFG->loginhttps enabled
 $PAGE->https_required();
 
-$PAGE->set_url('/auth/ldap/ntlmsso_attempt.php');
+$PAGE->set_url('/auth/'.$authtype.'/ntlmsso_attempt.php');
 $PAGE->set_context(context_system::instance());
 
 // Define variables used in page
 $site = get_site();
 
 $authsequence = get_enabled_auth_plugins(true); // auths, in sequence
-if (!in_array('ldap', $authsequence, true)) {
+if (!in_array($authtype, $authsequence, true)) {
     print_error('ldap_isdisabled', 'auth');
 }
 
-$authplugin = get_auth_plugin('ldap');
+$authplugin = get_auth_plugin($authtype);
 if (empty($authplugin->config->ntlmsso_enabled)) {
-    print_error('ntlmsso_isdisabled', 'auth_ldap');
+    print_error('ntlmsso_isdisabled', 'auth_'.$authtype);
 }
 
 $sesskey = sesskey();
@@ -34,8 +36,8 @@ $PAGE->set_heading($site->fullname);
 echo $OUTPUT->header();
 
 // $PAGE->https_required() up above takes care of what $CFG->httpswwwroot should be.
-$msg = '<p>'.get_string('ntlmsso_attempting', 'auth_ldap').'</p>'
+$msg = '<p>'.get_string('ntlmsso_attempting', 'auth_'.$authtype).'</p>'
     . '<img width="1", height="1" '
-    . ' src="' . $CFG->httpswwwroot . '/auth/ldap/ntlmsso_magic.php?sesskey='
+    . ' src="' . $CFG->httpswwwroot . '/auth/'.$authtype.'/ntlmsso_magic.php?sesskey='
     . $sesskey . '" />';
-redirect($CFG->httpswwwroot . '/auth/ldap/ntlmsso_finish.php', $msg, 3);
+redirect($CFG->httpswwwroot . '/auth/'.$authtype.'/ntlmsso_finish.php', $msg, 3);

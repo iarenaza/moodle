@@ -28,15 +28,18 @@
  */
 function xmldb_auth_ldap_upgrade($oldversion) {
 
+    $authtype = 'ldap';
+    $pluginconfig = 'auth/'.$authtype;
+
     // Moodle v2.5.0 release upgrade line
     // Put any upgrade step following this
 
     // MDL-39323 New setting in 2.5, make sure it's defined.
     if ($oldversion < 2013052100) {
-        if (get_config('start_tls', 'auth/ldap') === false) {
-            set_config('start_tls', 0, 'auth/ldap');
+        if (get_config('start_tls', $pluginconfig) === false) {
+            set_config('start_tls', 0, $pluginconfig);
         }
-        upgrade_plugin_savepoint(true, 2013052100, 'auth', 'ldap');
+        upgrade_plugin_savepoint(true, 2013052100, 'auth', $authtype);
     }
 
     // Moodle v2.6.0 release upgrade line.
