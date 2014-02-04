@@ -1109,6 +1109,7 @@ class auth_plugin_ldap extends auth_plugin_base {
             return false;
         }
 
+        $success = true;
         $user_info_result = ldap_read($ldapconnection, $user_dn, '(objectClass=*)', $search_attribs);
         if ($user_info_result) {
             $user_entry = ldap_get_entries_moodle($ldapconnection, $user_info_result);
@@ -1155,8 +1156,10 @@ class auth_plugin_ldap extends auth_plugin_base {
                             if ($nuvalue !== $ldapvalue) {
                                 // This might fail due to schema validation
                                 if (@ldap_modify($ldapconnection, $user_dn, array($ldapkey => $nuvalue))) {
+                                    $changed = true;
                                     continue;
                                 } else {
+                                    $success = false;
                                     error_log($this->errorlogtag.get_string ('updateremfail', 'auth_ldap',
                                                                              array('errno'=>ldap_errno($ldapconnection),
                                                                                    'errstring'=>ldap_err2str(ldap_errno($ldapconnection)),
@@ -1175,6 +1178,7 @@ class auth_plugin_ldap extends auth_plugin_base {
                                     $changed = true;
                                     continue;
                                 } else {
+                                    $success = false;
                                     error_log($this->errorlogtag.get_string ('updateremfail', 'auth_ldap',
                                                                              array('errno'=>ldap_errno($ldapconnection),
                                                                                    'errstring'=>ldap_err2str(ldap_errno($ldapconnection)),
@@ -1192,6 +1196,7 @@ class auth_plugin_ldap extends auth_plugin_base {
                                     $changed = true;
                                     continue;
                                 } else {
+                                    $success = false;
                                     error_log($this->errorlogtag.get_string ('updateremfail', 'auth_ldap',
                                                                              array('errno'=>ldap_errno($ldapconnection),
                                                                                    'errstring'=>ldap_err2str(ldap_errno($ldapconnection)),
@@ -1205,6 +1210,7 @@ class auth_plugin_ldap extends auth_plugin_base {
                     }
 
                     if ($ambiguous and !$changed) {
+                        $success = false;
                         error_log($this->errorlogtag.get_string ('updateremfailamb', 'auth_ldap',
                                                                  array('key'=>$key,
                                                                        'ouvalue'=>$ouvalue,
@@ -1214,12 +1220,11 @@ class auth_plugin_ldap extends auth_plugin_base {
             }
         } else {
             error_log($this->errorlogtag.get_string ('usernotfound', 'auth_ldap'));
-            $this->ldap_close();
-            return false;
+            $success = false;
         }
 
         $this->ldap_close();
-        return true;
+        return $success;
 
     }
 
