@@ -143,10 +143,10 @@ class auth_plugin_ldap extends auth_plugin_base {
     /**
      * Constructor with initialisation.
      */
-    function auth_plugin_ldap() {
+    function __construct() {
         $this->authtype = 'ldap';
-        $this->roleauth = 'auth_ldap';
-        $this->errorlogtag = '[AUTH LDAP] ';
+        $this->roleauth = 'auth_'.$this->authtype;
+        $this->errorlogtag = '[AUTH '.strtoupper($this->authtype).'] ';
         $this->init_plugin($this->authtype);
     }
 
@@ -161,7 +161,7 @@ class auth_plugin_ldap extends auth_plugin_base {
      */
     function user_login($username, $password) {
         if (! function_exists('ldap_bind')) {
-            print_error('auth_ldapnotinstalled', 'auth_ldap');
+            print_error('auth_ldapnotinstalled', 'auth_'.$this->authtype);
             return false;
         }
 
@@ -465,12 +465,12 @@ class auth_plugin_ldap extends auth_plugin_base {
                 // strings (UCS-2 Little Endian format) and surrounded with
                 // double quotes. See http://support.microsoft.com/?kbid=269190
                 if (!function_exists('mb_convert_encoding')) {
-                    print_error('auth_ldap_no_mbstring', 'auth_ldap');
+                    print_error('auth_ldap_no_mbstring', 'auth_'.$this->authtype);
                 }
 
                 // Check for invalid sAMAccountName characters.
                 if (preg_match('#[/\\[\]:;|=,+*?<>@"]#', $extusername)) {
-                    print_error ('auth_ldap_ad_invalidchars', 'auth_ldap');
+                    print_error ('auth_ldap_ad_invalidchars', 'auth_'.$this->authtype);
                 }
 
                 // First create the user account, and mark it as disabled.
@@ -480,7 +480,7 @@ class auth_plugin_ldap extends auth_plugin_base {
                                                  AUTH_AD_ACCOUNTDISABLE;
                 $userdn = 'cn='.ldap_addslashes($extusername).','.$this->config->create_context;
                 if (!ldap_add($ldapconnection, $userdn, $newuser)) {
-                    print_error('auth_ldap_ad_create_req', 'auth_ldap');
+                    print_error('auth_ldap_ad_create_req', 'auth_'.$this->authtype);
                 }
 
                 // Now set the password
@@ -490,12 +490,12 @@ class auth_plugin_ldap extends auth_plugin_base {
                 if(!ldap_modify($ldapconnection, $userdn, $newuser)) {
                     // Something went wrong: delete the user account and error out
                     ldap_delete ($ldapconnection, $userdn);
-                    print_error('auth_ldap_ad_create_req', 'auth_ldap');
+                    print_error('auth_ldap_ad_create_req', 'auth_'.$this->authtype);
                 }
                 $uadd = true;
                 break;
             default:
-               print_error('auth_ldap_unsupportedusertype', 'auth_ldap', '', $this->config->user_type_name);
+               print_error('auth_ldap_unsupportedusertype', 'auth_'.$this->authtype, '', $this->config->user_type_name);
         }
         $this->ldap_close();
         return $uadd;
@@ -542,14 +542,14 @@ class auth_plugin_ldap extends auth_plugin_base {
         require_once($CFG->dirroot.'/user/lib.php');
 
         if ($this->user_exists($user->username)) {
-            print_error('auth_ldap_user_exists', 'auth_ldap');
+            print_error('auth_ldap_user_exists', 'auth_'.$this->authtype);
         }
 
         $plainslashedpassword = $user->password;
         unset($user->password);
 
         if (! $this->user_create($user, $plainslashedpassword)) {
-            print_error('auth_ldap_create_error', 'auth_ldap');
+            print_error('auth_ldap_create_error', 'auth_'.$this->authtype);
         }
 
         $user->id = user_create_user($user, false, false);
@@ -575,7 +575,7 @@ class auth_plugin_ldap extends auth_plugin_base {
 
         if ($notify) {
             $emailconfirm = get_string('emailconfirm');
-            $PAGE->set_url('/auth/ldap/auth.php');
+            $PAGE->set_url('/auth/'.$this->authtype.'/auth.php');
             $PAGE->navbar->add($emailconfirm);
             $PAGE->set_title($emailconfirm);
             $PAGE->set_heading($emailconfirm);
@@ -661,7 +661,7 @@ class auth_plugin_ldap extends auth_plugin_base {
                 }
             }
         } else {
-            error_log($this->errorlogtag.get_string('didtfindexpiretime', 'auth_ldap'));
+            error_log($this->errorlogtag.get_string('didtfindexpiretime', 'auth_'.$this->authtype));
         }
 
         return $result;
@@ -680,7 +680,7 @@ class auth_plugin_ldap extends auth_plugin_base {
     function sync_users($do_updates=true) {
         global $CFG, $DB;
 
-        print_string('connectingldap', 'auth_ldap');
+        print_string('connectingldap', 'auth_'.$this->authtype);
         $ldapconnection = $this->ldap_connect();
 
         $dbman = $DB->get_manager();
@@ -693,7 +693,7 @@ class auth_plugin_ldap extends auth_plugin_base {
         $table->add_key('primary', XMLDB_KEY_PRIMARY, array('id'));
         $table->add_index('username', XMLDB_INDEX_UNIQUE, array('mnethostid', 'username'));
 
-        print_string('creatingtemptable', 'auth_ldap', 'tmp_extuser');
+        print_string('creatingtemptable', 'auth_'.$this->authtype, 'tmp_extuser');
         $dbman->create_temp_table($table);
 
         ////
@@ -757,10 +757,10 @@ class auth_plugin_ldap extends auth_plugin_base {
         /// so as to avoid mass deletion of users; which is hard to undo
         $count = $DB->count_records_sql('SELECT COUNT(username) AS count, 1 FROM {tmp_extuser}');
         if ($count < 1) {
-            print_string('didntgetusersfromldap', 'auth_ldap');
+            print_string('didntgetusersfromldap', 'auth_'.$this->authtype);
             exit;
         } else {
-            print_string('gotcountrecordsfromldap', 'auth_ldap', $count);
+            print_string('gotcountrecordsfromldap', 'auth_'.$this->authtype, $count);
         }
 
 
@@ -778,7 +778,7 @@ class auth_plugin_ldap extends auth_plugin_base {
             $remove_users = $DB->get_records_sql($sql, array('auth'=>$this->authtype));
 
             if (!empty($remove_users)) {
-                print_string('userentriestoremove', 'auth_ldap', count($remove_users));
+                print_string('userentriestoremove', 'auth_'.$this->authtype, count($remove_users));
                 foreach ($remove_users as $user) {
                     if (delete_user($user)) {
                         echo "\t"; print_string('auth_dbdeleteuser', 'auth_db', array('name'=>$user->username, 'id'=>$user->id)); echo "\n";
@@ -787,7 +787,7 @@ class auth_plugin_ldap extends auth_plugin_base {
                     }
                 }
             } else {
-                print_string('nouserentriestoremove', 'auth_ldap');
+                print_string('nouserentriestoremove', 'auth_'.$this->authtype);
             }
             unset($remove_users); // Free mem!
 
@@ -828,7 +828,7 @@ class auth_plugin_ldap extends auth_plugin_base {
             $revive_users = $DB->get_records_sql($sql, array($this->authtype));
 
             if (!empty($revive_users)) {
-                print_string('userentriestorevive', 'auth_ldap', count($revive_users));
+                print_string('userentriestorevive', 'auth_'.$this->authtype, count($revive_users));
 
                 foreach ($revive_users as $user) {
                     $updateuser = new stdClass();
@@ -839,7 +839,7 @@ class auth_plugin_ldap extends auth_plugin_base {
                     echo "\t"; print_string('auth_dbreviveduser', 'auth_db', array('name'=>$user->username, 'id'=>$user->id)); echo "\n";
                 }
             } else {
-                print_string('nouserentriestorevive', 'auth_ldap');
+                print_string('nouserentriestorevive', 'auth_'.$this->authtype);
             }
 
             unset($revive_users);
@@ -865,7 +865,7 @@ class auth_plugin_ldap extends auth_plugin_base {
             unset($all_keys); unset($key);
 
         } else {
-            print_string('noupdatestobedone', 'auth_ldap');
+            print_string('noupdatestobedone', 'auth_'.$this->authtype);
         }
         if ($do_updates and !empty($updatekeys)) { // run updates only if relevant
             $users = $DB->get_records_sql('SELECT u.username, u.id
@@ -873,7 +873,7 @@ class auth_plugin_ldap extends auth_plugin_base {
                                             WHERE u.deleted = 0 AND u.auth = ? AND u.mnethostid = ?',
                                           array($this->authtype, $CFG->mnet_localhost_id));
             if (!empty($users)) {
-                print_string('userentriestoupdate', 'auth_ldap', count($users));
+                print_string('userentriestoupdate', 'auth_'.$this->authtype, count($users));
 
                 $sitecontext = context_system::instance();
                 if (!empty($this->config->creators) and !empty($this->config->memberattribute)
@@ -908,7 +908,7 @@ class auth_plugin_ldap extends auth_plugin_base {
                 unset($users); // free mem
             }
         } else { // end do updates
-            print_string('noupdatestobedone', 'auth_ldap');
+            print_string('noupdatestobedone', 'auth_'.$this->authtype);
         }
 
 /// User Additions
@@ -922,7 +922,7 @@ class auth_plugin_ldap extends auth_plugin_base {
         $add_users = $DB->get_records_sql($sql);
 
         if (!empty($add_users)) {
-            print_string('userentriestoadd', 'auth_ldap', count($add_users));
+            print_string('userentriestoadd', 'auth_'.$this->authtype, count($add_users));
 
             $sitecontext = context_system::instance();
             if (!empty($this->config->creators) and !empty($this->config->memberattribute)
@@ -968,7 +968,7 @@ class auth_plugin_ldap extends auth_plugin_base {
             $transaction->allow_commit();
             unset($add_users); // free mem
         } else {
-            print_string('nouserstobeadded', 'auth_ldap');
+            print_string('nouserstobeadded', 'auth_'.$this->authtype);
         }
 
         $dbman->drop_table($table);
@@ -1089,7 +1089,7 @@ class auth_plugin_ldap extends auth_plugin_base {
                                                  & (~AUTH_AD_ACCOUNTDISABLE);
                 break;
             default:
-                print_error('user_activatenotsupportusertype', 'auth_ldap', '', $this->config->user_type_name);
+                print_error('user_activatenotsupportusertype', 'auth_'.$this->authtype, '', $this->config->user_type_name);
         }
         $result = ldap_modify($ldapconnection, $userdn, $newinfo);
         $this->ldap_close();
@@ -1143,7 +1143,7 @@ class auth_plugin_ldap extends auth_plugin_base {
         global $USER;
 
         if (isset($olduser->username) and isset($newuser->username) and $olduser->username != $newuser->username) {
-            error_log($this->errorlogtag.get_string('renamingnotallowed', 'auth_ldap'));
+            error_log($this->errorlogtag.get_string('renamingnotallowed', 'auth_'.$this->authtype));
             return false;
         }
 
@@ -1191,12 +1191,12 @@ class auth_plugin_ldap extends auth_plugin_base {
             $user_entry = ldap_get_entries_moodle($ldapconnection, $user_info_result);
             if (empty($user_entry)) {
                 $attribs = join (', ', $search_attribs);
-                error_log($this->errorlogtag.get_string('updateusernotfound', 'auth_ldap',
+                error_log($this->errorlogtag.get_string('updateusernotfound', 'auth_'.$this->authtype,
                                                           array('userdn'=>$user_dn,
                                                                 'attribs'=>$attribs)));
                 return false; // old user not found!
             } else if (count($user_entry) > 1) {
-                error_log($this->errorlogtag.get_string('morethanoneuser', 'auth_ldap'));
+                error_log($this->errorlogtag.get_string('morethanoneuser', 'auth_'.$this->authtype));
                 return false;
             }
 
@@ -1244,7 +1244,7 @@ class auth_plugin_ldap extends auth_plugin_base {
                                     continue;
                                 } else {
                                     $success = false;
-                                    error_log($this->errorlogtag.get_string ('updateremfail', 'auth_ldap',
+                                    error_log($this->errorlogtag.get_string ('updateremfail', 'auth_'.$this->authtype,
                                                                              array('errno'=>ldap_errno($ldapconnection),
                                                                                    'errstring'=>ldap_err2str(ldap_errno($ldapconnection)),
                                                                                    'key'=>$key,
@@ -1263,7 +1263,7 @@ class auth_plugin_ldap extends auth_plugin_base {
                                     continue;
                                 } else {
                                     $success = false;
-                                    error_log($this->errorlogtag.get_string ('updateremfail', 'auth_ldap',
+                                    error_log($this->errorlogtag.get_string ('updateremfail', 'auth_'.$this->authtype,
                                                                              array('errno'=>ldap_errno($ldapconnection),
                                                                                    'errstring'=>ldap_err2str(ldap_errno($ldapconnection)),
                                                                                    'key'=>$key,
@@ -1281,7 +1281,7 @@ class auth_plugin_ldap extends auth_plugin_base {
                                     continue;
                                 } else {
                                     $success = false;
-                                    error_log($this->errorlogtag.get_string ('updateremfail', 'auth_ldap',
+                                    error_log($this->errorlogtag.get_string ('updateremfail', 'auth_'.$this->authtype,
                                                                              array('errno'=>ldap_errno($ldapconnection),
                                                                                    'errstring'=>ldap_err2str(ldap_errno($ldapconnection)),
                                                                                    'key'=>$key,
@@ -1295,7 +1295,7 @@ class auth_plugin_ldap extends auth_plugin_base {
 
                     if ($ambiguous and !$changed) {
                         $success = false;
-                        error_log($this->errorlogtag.get_string ('updateremfailamb', 'auth_ldap',
+                        error_log($this->errorlogtag.get_string ('updateremfailamb', 'auth_'.$this->authtype,
                                                                  array('key'=>$key,
                                                                        'ouvalue'=>$ouvalue,
                                                                        'nuvalue'=>$nuvalue)));
@@ -1303,7 +1303,7 @@ class auth_plugin_ldap extends auth_plugin_base {
                 }
             }
         } else {
-            error_log($this->errorlogtag.get_string ('usernotfound', 'auth_ldap'));
+            error_log($this->errorlogtag.get_string ('usernotfound', 'auth_'.$this->authtype));
             $success = false;
         }
 
@@ -1350,7 +1350,7 @@ class auth_plugin_ldap extends auth_plugin_base {
         $user_dn = $this->ldap_find_userdn($ldapconnection, $extusername);
 
         if (!$user_dn) {
-            error_log($this->errorlogtag.get_string ('nodnforusername', 'auth_ldap', $user->username));
+            error_log($this->errorlogtag.get_string ('nodnforusername', 'auth_'.$this->authtype, $user->username));
             return false;
         }
 
@@ -1359,7 +1359,7 @@ class auth_plugin_ldap extends auth_plugin_base {
                 // Change password
                 $result = ldap_modify($ldapconnection, $user_dn, array('userPassword' => $extpassword));
                 if (!$result) {
-                    error_log($this->errorlogtag.get_string ('updatepasserror', 'auth_ldap',
+                    error_log($this->errorlogtag.get_string ('updatepasserror', 'auth_'.$this->authtype,
                                                                array('errno'=>ldap_errno($ldapconnection),
                                                                      'errstring'=>ldap_err2str(ldap_errno($ldapconnection)))));
                 }
@@ -1386,14 +1386,14 @@ class auth_plugin_ldap extends auth_plugin_base {
                         // Store attribute changes in LDAP
                         $result = ldap_modify($ldapconnection, $user_dn, $newattrs);
                         if (!$result) {
-                            error_log($this->errorlogtag.get_string ('updatepasserrorexpiregrace', 'auth_ldap',
+                            error_log($this->errorlogtag.get_string ('updatepasserrorexpiregrace', 'auth_'.$this->authtype,
                                                                        array('errno'=>ldap_errno($ldapconnection),
                                                                              'errstring'=>ldap_err2str(ldap_errno($ldapconnection)))));
                         }
                     }
                 }
                 else {
-                    error_log($this->errorlogtag.get_string ('updatepasserrorexpire', 'auth_ldap',
+                    error_log($this->errorlogtag.get_string ('updatepasserrorexpire', 'auth_'.$this->authtype,
                                                              array('errno'=>ldap_errno($ldapconnection),
                                                                    'errstring'=>ldap_err2str(ldap_errno($ldapconnection)))));
                 }
@@ -1404,13 +1404,13 @@ class auth_plugin_ldap extends auth_plugin_base {
                 // strings (UCS-2 Little Endian format) and surrounded with
                 // double quotes. See http://support.microsoft.com/?kbid=269190
                 if (!function_exists('mb_convert_encoding')) {
-                    error_log($this->errorlogtag.get_string ('needmbstring', 'auth_ldap'));
+                    error_log($this->errorlogtag.get_string ('needmbstring', 'auth_'.$this->authtype));
                     return false;
                 }
                 $extpassword = mb_convert_encoding('"'.$extpassword.'"', "UCS-2LE", $this->config->ldapencoding);
                 $result = ldap_modify($ldapconnection, $user_dn, array('unicodePwd' => $extpassword));
                 if (!$result) {
-                    error_log($this->errorlogtag.get_string ('updatepasserror', 'auth_ldap',
+                    error_log($this->errorlogtag.get_string ('updatepasserror', 'auth_'.$this->authtype,
                                                              array('errno'=>ldap_errno($ldapconnection),
                                                                    'errstring'=>ldap_err2str(ldap_errno($ldapconnection)))));
                 }
@@ -1420,7 +1420,7 @@ class auth_plugin_ldap extends auth_plugin_base {
                 // Send LDAP the password in cleartext, it will md5 it itself
                 $result = ldap_modify($ldapconnection, $user_dn, array('userPassword' => $extpassword));
                 if (!$result) {
-                    error_log($this->errorlogtag.get_string ('updatepasserror', 'auth_ldap',
+                    error_log($this->errorlogtag.get_string ('updatepasserror', 'auth_'.$this->authtype,
                                                              array('errno'=>ldap_errno($ldapconnection),
                                                                    'errstring'=>ldap_err2str(ldap_errno($ldapconnection)))));
                 }
@@ -1462,7 +1462,7 @@ class auth_plugin_ldap extends auth_plugin_base {
                 $result = $this->ldap_get_ad_pwdexpire($time, $ldapconnection, $user_dn);
                 break;
             default:
-                print_error('auth_ldap_usertypeundefined', 'auth_ldap');
+                print_error('auth_ldap_usertypeundefined', 'auth_'.$this->authtype);
         }
         return $result;
     }
@@ -1483,7 +1483,7 @@ class auth_plugin_ldap extends auth_plugin_base {
                 $result = $time ; // Already in correct format
                 break;
             default:
-                print_error('auth_ldap_usertypeundefined2', 'auth_ldap');
+                print_error('auth_ldap_usertypeundefined2', 'auth_'.$this->authtype);
         }
         return $result;
 
@@ -1643,7 +1643,7 @@ class auth_plugin_ldap extends auth_plugin_base {
                                                           // See MDL-14071
             && !empty($this->config->ntlmsso_enabled)     // SSO enabled
             && !empty($this->config->ntlmsso_subnet)      // have a subnet to test for
-            && empty($_GET['authldap_skipntlmsso'])       // haven't failed it yet
+            && empty($_GET['auth'.$this->authtype.'_skipntlmsso'])       // haven't failed it yet
             && (isguestuser() || !isloggedin())           // guestuser or not-logged-in users
             && address_in_subnet(getremoteaddr(), $this->config->ntlmsso_subnet)) {
 
@@ -1662,12 +1662,12 @@ class auth_plugin_ldap extends auth_plugin_base {
                 $this->config->ntlmsso_ie_fastpath == AUTH_NTLM_FASTPATH_YESFORM) {
                 if (core_useragent::is_ie()) {
                     $sesskey = sesskey();
-                    redirect($CFG->wwwroot.'/auth/ldap/ntlmsso_magic.php?sesskey='.$sesskey);
+                    redirect($CFG->wwwroot.'/auth/'.$this->authtype.'/ntlmsso_magic.php?sesskey='.$sesskey);
                 } else if ($this->config->ntlmsso_ie_fastpath == AUTH_NTLM_FASTPATH_YESFORM) {
-                    redirect($CFG->httpswwwroot.'/login/index.php?authldap_skipntlmsso=1');
+                    redirect($CFG->httpswwwroot.'/login/index.php?auth'.$this->authtype.'_skipntlmsso=1');
                 }
             }
-            redirect($CFG->wwwroot.'/auth/ldap/ntlmsso_attempt.php');
+            redirect($CFG->wwwroot.'/auth/'.$this->authtype.'/ntlmsso_attempt.php');
         }
 
         // No NTLM SSO, Use the normal login page instead.
@@ -1679,7 +1679,7 @@ class auth_plugin_ldap extends auth_plugin_base {
         // we don't want to use at all. As we can't get rid of it, just point
         // $SESSION->wantsurl to $CFG->wwwroot (after all, we came from there).
         if (empty($SESSION->wantsurl)
-            && (get_referer() == $CFG->httpswwwroot.'/auth/ldap/ntlmsso_finish.php')) {
+            && (get_referer() == $CFG->httpswwwroot.'/auth/'.$this->authtype.'/ntlmsso_finish.php')) {
 
             $SESSION->wantsurl = $CFG->wwwroot;
         }
@@ -1724,7 +1724,7 @@ class auth_plugin_ldap extends auth_plugin_base {
                     $username = substr($username, 0, strpos($username, '@'));
                     break;
                 default:
-                    error_log($this->errorlogtag.get_string ('ntlmsso_unknowntype', 'auth_ldap'));
+                    error_log($this->errorlogtag.get_string ('ntlmsso_unknowntype', 'auth_'.$this->authtype));
                     return false; // Should never happen!
             }
 
@@ -1822,7 +1822,7 @@ class auth_plugin_ldap extends auth_plugin_base {
         global $CFG, $OUTPUT;
 
         if (!function_exists('ldap_connect')) { // Is php-ldap really there?
-            echo $OUTPUT->notification(get_string('auth_ldap_noextension', 'auth_ldap'));
+            echo $OUTPUT->notification(get_string('auth_ldap_noextension', 'auth_'.$this->authtype));
             return;
         }
 
@@ -1976,8 +1976,8 @@ class auth_plugin_ldap extends auth_plugin_base {
         set_config('ntlmsso_enabled', (int)$config->ntlmsso_enabled, $this->pluginconfig);
         set_config('ntlmsso_subnet', trim($config->ntlmsso_subnet), $this->pluginconfig);
         set_config('ntlmsso_ie_fastpath', (int)$config->ntlmsso_ie_fastpath, $this->pluginconfig);
-        set_config('ntlmsso_type', $config->ntlmsso_type, 'auth/ldap');
-        set_config('ntlmsso_remoteuserformat', trim($config->ntlmsso_remoteuserformat), 'auth/ldap');
+        set_config('ntlmsso_type', $config->ntlmsso_type, $this->pluginconfig);
+        set_config('ntlmsso_remoteuserformat', trim($config->ntlmsso_remoteuserformat), $this->pluginconfig);
 
         return true;
     }
@@ -1995,7 +1995,7 @@ class auth_plugin_ldap extends auth_plugin_base {
         global $CFG;
 
         if (!function_exists('bcsub')) {
-            error_log($this->errorlogtag.get_string ('needbcmath', 'auth_ldap'));
+            error_log($this->errorlogtag.get_string ('needbcmath', 'auth_'.$this->authtype));
             return 0;
         }
 
@@ -2004,7 +2004,7 @@ class auth_plugin_ldap extends auth_plugin_base {
         $sr = ldap_read($ldapconn, $user_dn, '(objectClass=*)',
                         array('userAccountControl'));
         if (!$sr) {
-            error_log($this->errorlogtag.get_string ('useracctctrlerror', 'auth_ldap', $user_dn));
+            error_log($this->errorlogtag.get_string ('useracctctrlerror', 'auth_'.$this->authtype, $user_dn));
             // Don't expire password, as we are not sure if it has to be
             // expired or not.
             return 0;
@@ -2051,7 +2051,7 @@ class auth_plugin_ldap extends auth_plugin_base {
         $sr = ldap_read($ldapconn, ROOTDSE, '(objectClass=*)',
                         array('defaultNamingContext'));
         if (!$sr) {
-            error_log($this->errorlogtag.get_string ('rootdseerror', 'auth_ldap'));
+            error_log($this->errorlogtag.get_string ('rootdseerror', 'auth_'.$this->authtype));
             return 0;
         }
 
@@ -2144,7 +2144,7 @@ class auth_plugin_ldap extends auth_plugin_base {
             return $ldapconnection;
         }
 
-        print_error('auth_ldap_noconnect_all', 'auth_ldap', '', $debuginfo);
+        print_error('auth_ldap_noconnect_all', 'auth_'.$this->authtype, '', $debuginfo);
     }
 
     /**
