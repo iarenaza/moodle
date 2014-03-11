@@ -48,17 +48,19 @@
 
 define('CLI_SCRIPT', true);
 
+$authtype = 'ldap';
+
 require(dirname(dirname(dirname(dirname(__FILE__)))).'/config.php'); // global moodle config file.
 require_once($CFG->dirroot.'/course/lib.php');
 
 // Ensure errors are well explained
 set_debugging(DEBUG_DEVELOPER, true);
 
-if (!is_enabled_auth('ldap')) {
-    error_log('[AUTH LDAP] '.get_string('pluginnotenabled', 'auth_ldap'));
+if (!is_enabled_auth($authtype)) {
+    error_log('[AUTH '.strtoupper($authtype).'] '.get_string('pluginnotenabled', 'auth_'.$authtype));
     die;
 }
 
-$ldapauth = get_auth_plugin('ldap');
+$ldapauth = get_auth_plugin($authtype);
 $ldapauth->sync_users(true);
 
