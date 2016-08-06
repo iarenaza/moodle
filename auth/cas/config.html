@@ -96,7 +96,13 @@ if (!isset($config->removeuser)) {
 $yesno = array( get_string('no'), get_string('yes') );
 
 $disabled = '';
-if (!ldap_paged_results_supported($config->ldap_version)) {
+try {
+    $ldapconn = $this->ldap_connect();
+    $pagedresultssupported = ldap_paged_results_supported($config->ldap_version, $ldapconn);
+} catch (Exception $e) {
+    $pagedresultssupported = ldap_paged_results_supported($config->ldap_version);
+}
+if (!$pagedresultssupported) {
     $disabled = ' disabled="disabled"';
     echo $OUTPUT->notification(get_string('pagedresultsnotsupp', 'auth_ldap'));
 }

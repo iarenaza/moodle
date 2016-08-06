@@ -111,7 +111,13 @@ $fastpathoptions = array(AUTH_NTLM_FASTPATH_YESFORM => get_string('auth_ntlmsso_
                          AUTH_NTLM_FASTPATH_ATTEMPT => get_string('auth_ntlmsso_ie_fastpath_attempt', 'auth_ldap'));
 
 $disabled = '';
-if (!ldap_paged_results_supported($config->ldap_version)) {
+try {
+    $ldapconn = $this->ldap_connect();
+    $pagedresultssupported = ldap_paged_results_supported($config->ldap_version, $ldapconn);
+} catch (Exception $e) {
+    $pagedresultssupported = ldap_paged_results_supported($config->ldap_version);
+}
+if (!$pagedresultssupported) {
     $disabled = ' disabled="disabled"';
     echo $OUTPUT->notification(get_string('pagedresultsnotsupp', 'auth_ldap'));
 }
