@@ -55,5 +55,14 @@ function xmldb_auth_cas_upgrade($oldversion) {
     // Moodle v3.1.0 release upgrade line.
     // Put any upgrade step following this.
 
+    if ($oldversion < 2017042800) {
+        // Set the default LDAP connect network timeout if we don't have one already.
+        if ($DB->get_field('config_plugins', 'value', array('name' => 'connecttimeout', 'plugin' => 'auth/cas'), IGNORE_MISSING) === false) {
+            set_config('connecttimeout', '0', 'auth/cas');
+        }
+
+        upgrade_plugin_savepoint(true, 2017042800, 'auth', 'cas');
+    }
+
     return true;
 }
