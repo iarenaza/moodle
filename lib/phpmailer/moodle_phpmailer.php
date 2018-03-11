@@ -22,6 +22,7 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+namespace {
 defined('MOODLE_INTERNAL') || die();
 
 // PLEASE NOTE: we use the phpmailer class _unmodified_
@@ -54,6 +55,10 @@ class moodle_phpmailer extends \PHPMailer\PHPMailer\PHPMailer {
 
         if (!empty($CFG->smtpauthtype)) {
             $this->AuthType = $CFG->smtpauthtype;
+            if ($CFG->smtpauthtype === 'XOAUTH2') {
+                $oauth = new PHPMailer\PHPMailer\OAuth($CFG->smtpoauth2issuer, $CFG->smtpuser);
+                $this->setOauth($oauth);
+            }
         }
 
         // Some MTAs may do double conversion of LF if CRLF used, CRLF is required line ending in RFC 822bis.
@@ -142,4 +147,64 @@ class moodle_phpmailer extends \PHPMailer\PHPMailer\PHPMailer {
             return parent::postSend();
         }
     }
+}
+}
+
+namespace PHPMailer\PHPMailer {
+/**
+ * Moodle Customised version of the OAuth class
+ *
+ * This class supersedes the stock OAuth class
+ * in order to reduce dependencies on 3rd party libraries,
+ * as the Horde IMAP library already includes the functionality
+ * needed by the class.
+ *
+ * @copyright 2018 Iñaki Arenaza (iarenaza@escomposlinux.org)
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @since     Moodle 3.4
+ */
+class OAuth {
+    /**
+     * The id of a Moodle OAuth2 service.
+     *
+     * @var integer
+     */
+    protected $issuerid;
+
+    /**
+     * The username to authenticate with.
+     *
+     * @var string
+     */
+    protected $username;
+
+    public function __construct($issuerid, $username) {
+        $this->issuerid = $issuerid;
+        $this->username = $username;
+    }
+
+    public function getOauth64() {
+        // See https://developers.google.com/gmail/imap/xoauth2-protocol for details.
+        try {
+            $issuer = \core\oauth2\api::get_issuer($this->issuerid);
+        } catch (dml_missing_record_exception $e) {
+            $message = $e->getMessage();
+            throw new \moodle_exception('oauth2servicefailure', 'admin', '', null, $message);
+        }
+
+        if ($issuer && !$issuer->get('enabled')) {
+            $message = get_string('auth2issuer_disabled', 'admin');
+            throw new \moodle_exception('oauth2servicefailure', 'admin', '', null, $message);
+        }
+
+        if (!($oauth2client = \core\oauth2\api::get_system_oauth_client($issuer))) {
+            $message = get_string('auth2issuer_connectionerror', 'admin');
+            throw new \moodle_exception('oauth2servicefailure', 'admin', '', null, $message);
+        }
+
+        $accesstoken = $oauth2client->get_accesstoken();
+        $xoauth2token = new \Horde_Imap_Client_Password_Xoauth2($this->username, $accesstoken->token);
+        return $xoauth2token->getPassword();
+    }
+}
 }

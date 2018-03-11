@@ -223,9 +223,23 @@ $temp->add(new admin_setting_configtext('smtphosts', new lang_string('smtphosts'
 $options = array('' => new lang_string('none', 'admin'), 'ssl' => 'SSL', 'tls' => 'TLS');
 $temp->add(new admin_setting_configselect('smtpsecure', new lang_string('smtpsecure', 'admin'),
             new lang_string('configsmtpsecure', 'admin'), '', $options));
-$authtypeoptions = array('LOGIN' => 'LOGIN', 'PLAIN' => 'PLAIN', 'NTLM' => 'NTLM', 'CRAM-MD5' => 'CRAM-MD5');
+$authtypeoptions = array('LOGIN' => 'LOGIN', 'PLAIN' => 'PLAIN', 'NTLM' => 'NTLM', 'CRAM-MD5' => 'CRAM-MD5', 'XOAUTH2' => 'XOAUTH2');
 $temp->add(new admin_setting_configselect('smtpauthtype', new lang_string('smtpauthtype', 'admin'),
             new lang_string('configsmtpauthtype', 'admin'), 'LOGIN', $authtypeoptions));
+$xoauth2options = [];
+$issuers = \core\oauth2\api::get_all_issuers();
+foreach ($issuers as $issuer) {
+    $xoauth2options[$issuer->get('id')] = s($issuer->get('name'));
+}
+// If there are no oauth2 issuers defined yet, the $options array is empty and the
+// select element is not rendered. Add an entry with an invitation to select one issuer.
+if (!count($options)) {
+    $xoauth2options[] = get_string('selectissuer', 'admin');
+}
+$temp->add(new admin_setting_configselect('smtpoauth2issuer',
+                                          new lang_string('oauth2issuer', 'admin'),
+                                          new lang_string('oauth2issuer_desc', 'admin', get_string('outgoingmailconfig', 'admin')),
+                                          null, $xoauth2options));
 $temp->add(new admin_setting_configtext('smtpuser', new lang_string('smtpuser', 'admin'),
             new lang_string('configsmtpuser', 'admin'), '', PARAM_NOTAGS));
 $temp->add(new admin_setting_configpasswordunmask('smtppass', new lang_string('smtppass', 'admin'),

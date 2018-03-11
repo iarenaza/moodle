@@ -67,6 +67,25 @@ if ($hassiteconfig) {
             new lang_string('messageinboundhostssl', 'tool_messageinbound'),
             new lang_string('messageinboundhostssl_desc', 'tool_messageinbound'), 'ssl', $options));
 
+    $settings->add(new admin_setting_configcheckbox('messageinbound_xoauth2',
+            new lang_string('xoauth2', 'tool_messageinbound'),
+            new lang_string('xoauth2_desc', 'tool_messageinbound'), 0));
+
+    $options = [];
+    $issuers = \core\oauth2\api::get_all_issuers();
+    foreach ($issuers as $issuer) {
+        $options[$issuer->get('id')] = s($issuer->get('name'));
+    }
+    // If there are no oauth2 issuers defined yet, the $options array is empty and the
+    // select element is not rendered. Add an entry with an invitation to select one issuer.
+    if (!count($options)) {
+        $options[] = get_string('selectissuer','admin');
+    }
+    $settings->add(new admin_setting_configselect('messageinbound_oauth2issuer',
+            new lang_string('oauth2issuer', 'admin'),
+            new lang_string('oauth2issuer_desc', 'admin',
+                            get_string('incomingmailconfiguration', 'tool_messageinbound')), null, $options));
+
     $settings->add(new admin_setting_configtext('messageinbound_hostuser',
             new lang_string('messageinboundhostuser', 'tool_messageinbound'),
             new lang_string('messageinboundhostuser_desc', 'tool_messageinbound'), '', PARAM_NOTAGS));
