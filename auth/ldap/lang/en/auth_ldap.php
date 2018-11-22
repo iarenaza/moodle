@@ -120,6 +120,7 @@ $string['creatingtemptable'] = "Creating temporary table {\$a}\n";
 $string['didntfindexpiretime'] = 'password_expire() didn\'t find expiration time.';
 $string['didntgetusersfromldap'] = "Did not get any users from LDAP -- error? -- exiting\n";
 $string['gotcountrecordsfromldap'] = "Got {\$a} records from LDAP\n";
+$string['invaliduserexception'] = "\nCannot add user!\nProblematic user details follow:\n{\$a}\nCannot continue until you fix the problematic user.\nError details follow:\n\n";
 $string['ldapnotconfigured'] = 'The LDAP host url is currently not configured';
 $string['morethanoneuser'] = 'Strange! More than one user record found in ldap. Only using the first one.';
 $string['needbcmath'] = 'You need the BCMath extension to use expired password checking with Active Directory.';
