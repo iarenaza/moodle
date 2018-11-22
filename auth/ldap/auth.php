@@ -914,7 +914,15 @@ class auth_plugin_ldap extends auth_plugin_base {
                     $user->calendartype = $CFG->calendartype;
                 }
 
-                $id = user_create_user($user, false);
+                try {
+                    $id = user_create_user($user, false);
+                } catch (Exception $e) {
+                    print_string('invaliduserexception', 'auth_ldap', print_r($user, true));
+                    $dbman->drop_table($table);
+                    $transaction->rollback($e);
+                    $this->ldap_close();
+                    die();
+                }
                 echo "\t"; print_string('auth_dbinsertuser', 'auth_db', array('name'=>$user->username, 'id'=>$id)); echo "\n";
                 $euser = $DB->get_record('user', array('id' => $id));
 
